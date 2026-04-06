@@ -360,6 +360,7 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
           item.customerPhone,
           item.productName,
           item.issueType,
+          item.imageName,
           item.status,
           item.createdAt,
         ])),
@@ -806,6 +807,30 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
     });
   };
 
+  const renderAttachmentCell = (row) => {
+    if (!row.imageName && !row.imageUrl && !row.imagePublicId) {
+      return <span className="text-gray-400">Not attached</span>;
+    }
+
+    return (
+      <div className="space-y-1">
+        <p className="font-medium text-gray-900">{row.imageName || 'Attached file'}</p>
+        {row.imageUrl ? (
+          <a
+            href={row.imageUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-medium text-blue-600 hover:text-blue-700"
+          >
+            Open attachment
+          </a>
+        ) : (
+          <span className="text-xs text-gray-400">Attached with request</span>
+        )}
+      </div>
+    );
+  };
+
   const inventoryView = (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -932,6 +957,7 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
           { key: 'productName', label: 'Product' },
           { key: 'issueType', label: 'Issue Type' },
           { key: 'customerPhone', label: 'Contact', render: (row) => row.customerPhone || row.customerEmail },
+          { key: 'imageName', label: 'Attachment', render: (row) => renderAttachmentCell(row) },
           { key: 'createdAt', label: 'Requested On', render: (row) => formatDisplayDate(row.createdAt) },
           { key: 'status', label: 'Status', badge: true },
         ],
