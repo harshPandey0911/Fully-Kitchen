@@ -50,9 +50,9 @@ const RetailersManagement = () => {
       retailers.filter((retailer) => {
         const matchesSearch =
           retailer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          retailer.owner.toLowerCase().includes(searchTerm.toLowerCase()) ||
           retailer.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          retailer.email.toLowerCase().includes(searchTerm.toLowerCase());
+          retailer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          retailer.phone?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'All' || retailer.status === filterStatus;
         return matchesSearch && matchesStatus;
       }),
@@ -63,8 +63,8 @@ const RetailersManagement = () => {
     () => [
       { title: 'Total Retailers', value: retailers.length },
       { title: 'Active Retailers', value: retailers.filter((retailer) => retailer.status === 'Active').length },
-      { title: 'Total Orders', value: retailers.reduce((sum, retailer) => sum + retailer.orders, 0) },
-      { title: 'Total Customers', value: retailers.reduce((sum, retailer) => sum + retailer.customers, 0) },
+      { title: 'Total Orders', value: retailers.reduce((sum, retailer) => sum + (retailer.orderCount || 0), 0) },
+      { title: 'Logged In', value: retailers.filter((retailer) => retailer.lastLoginAt).length },
     ],
     [retailers],
   );
@@ -115,12 +115,11 @@ const RetailersManagement = () => {
           <table className="w-full">
             <thead className={adminUi.tableHeader}>
               <tr>
-                <th className={adminUi.th}>Store Name</th>
-                <th className={adminUi.th}>Owner</th>
+                <th className={adminUi.th}>Retailer</th>
+                <th className={adminUi.th}>Email</th>
+                <th className={adminUi.th}>Phone</th>
                 <th className={adminUi.th}>Location</th>
                 <th className={adminUi.th}>Orders</th>
-                <th className={adminUi.th}>Customers</th>
-                <th className={adminUi.th}>Sales</th>
                 <th className={adminUi.th}>Status</th>
               </tr>
             </thead>
@@ -129,21 +128,12 @@ const RetailersManagement = () => {
                 filteredRetailers.map((retailer) => (
                   <tr key={retailer.id} className={adminUi.tableRow}>
                     <td className={`${adminUi.td} font-medium text-gray-900`}>
-                      <div>
-                        <p>{retailer.name}</p>
-                        <p className="mt-1 text-xs text-gray-400">{retailer.joinDate}</p>
-                      </div>
+                      {retailer.name}
                     </td>
-                    <td className={adminUi.td}>
-                      <div>
-                        <p>{retailer.owner}</p>
-                        <p className="mt-1 text-xs text-gray-400">{retailer.contact}</p>
-                      </div>
-                    </td>
+                    <td className={adminUi.td}>{retailer.email}</td>
+                    <td className={adminUi.td}>{retailer.phone || '—'}</td>
                     <td className={adminUi.td}>{retailer.location}</td>
-                    <td className={`${adminUi.td} text-gray-800`}>{retailer.orders}</td>
-                    <td className={`${adminUi.td} text-gray-800`}>{retailer.customers}</td>
-                    <td className={`${adminUi.td} text-gray-800`}>{retailer.sales}</td>
+                    <td className={`${adminUi.td} text-gray-800`}>{retailer.orderCount || 0}</td>
                     <td className={adminUi.td}>
                       <span className={statusBadge(retailer.status)}>{retailer.status}</span>
                     </td>

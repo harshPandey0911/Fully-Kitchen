@@ -5,7 +5,7 @@ export default function ProductsHeader({ onRegister }) {
         <div className="min-w-0">
           <h1 className="text-[1.2rem] font-bold tracking-[-0.03em] text-[#1E1E1E]">My Products</h1>
           <p className="mt-1 text-sm leading-6 text-[#6B6B6B]">
-            Track registered appliances, coverage health, and expiring warranties in one view.
+            Track registered appliances and browse new retailer inventory in one place.
           </p>
         </div>
 

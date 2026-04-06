@@ -23,6 +23,7 @@ const initialRegisterForm = {
 
 const inputClass = 'input-field';
 const hasAtSymbol = (value) => String(value).includes('@');
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const readAccounts = () => {
   try {
@@ -82,10 +83,13 @@ export default function RoleAuth({ initialMode = 'login' }) {
 
   const validateLogin = () => {
     const nextErrors = {};
+    const normalizedEmail = loginForm.email.trim();
 
-    if (!loginForm.email.trim()) {
+    if (!normalizedEmail) {
       nextErrors.email = 'Email is required';
-    } else if (!hasAtSymbol(loginForm.email.trim())) {
+    } else if (isAdminLogin && !emailPattern.test(normalizedEmail)) {
+      nextErrors.email = 'Enter a valid email address';
+    } else if (!isAdminLogin && !hasAtSymbol(normalizedEmail)) {
       nextErrors.email = 'Email must include @';
     }
 

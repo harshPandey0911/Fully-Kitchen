@@ -1,28 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import toast from 'react-hot-toast';
 import { adminUi, statusBadge } from './adminStyles';
 import { inventoryProductsApi } from '../../services/inventoryProductsApi';
 
 const baseCategories = ['All', 'Cooking', 'Laundry', 'Cooling', 'Kitchen', 'Water'];
-const initialFormData = {
-  name: '',
-  category: 'Cooking',
-  price: '',
-  quantity: '',
-};
-
 const formatCurrency = (value) => `Rs ${Number(value || 0).toLocaleString('en-IN')}`;
 
 const Inventory = () => {
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState(initialFormData);
-  const [editingProductId, setEditingProductId] = useState('');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -105,219 +92,14 @@ const Inventory = () => {
     ];
   }, [products]);
 
-  const resetModalState = () => {
-    setEditingProductId('');
-    setFormData(initialFormData);
-    setShowModal(false);
-  };
-
-  const handleInputChange = (event) => {
-    const { name, value } = event.target;
-    setFormData((previous) => ({ ...previous, [name]: value }));
-  };
-
-  const openCreateModal = () => {
-    setEditingProductId('');
-    setFormData(initialFormData);
-    setShowModal(true);
-  };
-
-  const openEditModal = (product) => {
-    setEditingProductId(product.id);
-    setFormData({
-      name: product.name,
-      category: product.category,
-      price: String(product.price),
-      quantity: String(product.quantity),
-    });
-    setShowModal(true);
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    if (!formData.name.trim() || !formData.price || !formData.quantity) {
-      toast.error('Please fill all fields.');
-      return;
-    }
-
-    const payload = {
-      name: formData.name.trim(),
-      category: formData.category,
-      price: Number(formData.price),
-      quantity: Number.parseInt(formData.quantity, 10),
-    };
-
-    if (!Number.isFinite(payload.price) || payload.price < 0) {
-      toast.error('Enter a valid price.');
-      return;
-    }
-
-    if (!Number.isInteger(payload.quantity) || payload.quantity < 0) {
-      toast.error('Enter a valid stock quantity.');
-      return;
-    }
-
-    setSaving(true);
-
-    try {
-      if (editingProductId) {
-        const response = await inventoryProductsApi.update(editingProductId, payload);
-
-        setProducts((current) =>
-          current.map((product) =>
-            product.id === editingProductId ? response.inventoryProduct : product,
-          ),
-        );
-        toast.success('Product updated successfully.');
-      } else {
-        const response = await inventoryProductsApi.create(payload);
-
-        setProducts((current) => [response.inventoryProduct, ...current]);
-        toast.success('Product added successfully.');
-      }
-
-      resetModalState();
-    } catch (saveError) {
-      toast.error(saveError.message || 'Unable to save product.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    const product = products.find((item) => item.id === id);
-
-    if (!window.confirm(`Delete ${product?.name || 'this product'}?`)) {
-      return;
-    }
-
-    setDeletingId(id);
-
-    try {
-      await inventoryProductsApi.remove(id);
-      setProducts((current) => current.filter((product) => product.id !== id));
-      toast.success('Product deleted successfully.');
-    } catch (deleteError) {
-      toast.error(deleteError.message || 'Unable to delete product.');
-    } finally {
-      setDeletingId('');
-    }
-  };
-
   return (
     <div className={adminUi.page}>
       <div className={adminUi.pageHeader}>
         <div>
           <h1 className={adminUi.pageTitle}>Inventory</h1>
-          <p className={adminUi.pageDescription}>Manage your kitchen appliance stock.</p>
+          <p className={adminUi.pageDescription}>View distributor-added products in the shared catalog.</p>
         </div>
-        <button type="button" onClick={openCreateModal} className={adminUi.primaryButton}>
-          Add Product
-        </button>
       </div>
-
-      {showModal ? (
-        <div className={adminUi.modalOverlay}>
-          <div className={adminUi.modal}>
-            <div className="flex items-center justify-between border-b border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {editingProductId ? 'Edit Product' : 'Add Product'}
-              </h2>
-              <button
-                type="button"
-                onClick={resetModalState}
-                className="text-xl text-gray-500 transition hover:text-gray-700"
-              >
-                x
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4 p-6">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Product Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Air Fryer"
-                  className={adminUi.input}
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Category</label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className={adminUi.select}
-                >
-                  {categories
-                    .filter((category) => category !== 'All')
-                    .map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Price</label>
-                <input
-                  type="number"
-                  min="0"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 5999"
-                  className={adminUi.input}
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Stock Quantity
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  name="quantity"
-                  value={formData.quantity}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 50"
-                  className={adminUi.input}
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={resetModalState}
-                  className={`flex-1 ${adminUi.secondaryButton} py-2`}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className={`flex-1 ${adminUi.primaryButton} disabled:cursor-not-allowed disabled:opacity-60`}
-                >
-                  {saving
-                    ? 'Saving...'
-                    : editingProductId
-                      ? 'Save Product'
-                      : 'Add Product'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         <input
@@ -392,23 +174,7 @@ const Inventory = () => {
                         <span className={statusBadge(product.status)}>{product.status}</span>
                       </td>
                       <td className={adminUi.td}>
-                        <div className="flex items-center gap-4">
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(product)}
-                            className={adminUi.textButton}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(product.id)}
-                            disabled={deletingId === product.id}
-                            className="text-sm text-red-600 transition hover:underline disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {deletingId === product.id ? 'Deleting...' : 'Delete'}
-                          </button>
-                        </div>
+                        <span className="text-xs text-gray-500">Read only</span>
                       </td>
                     </tr>
                   ))}

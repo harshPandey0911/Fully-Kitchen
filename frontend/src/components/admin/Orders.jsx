@@ -3,14 +3,7 @@ import toast from 'react-hot-toast';
 import { adminUi, statusBadge } from './adminStyles';
 
 const Orders = () => {
-  const initialOrders = [
-    { id: 'ORD-5001', retailer: 'Retail Plus Delhi', product: 'Induction Cooktop', quantity: 25, status: 'Pending' },
-    { id: 'ORD-5002', retailer: 'Kitchen Zone Mumbai', product: 'Washing Machine', quantity: 15, status: 'Approved' },
-    { id: 'ORD-5003', retailer: 'Appliance Express Bangalore', product: 'Refrigerator', quantity: 10, status: 'Pending' },
-    { id: 'ORD-5004', retailer: 'Smart Home Chennai', product: 'Mixer Grinder', quantity: 40, status: 'Rejected' },
-    { id: 'ORD-5005', retailer: 'Modern Kitchen Hyderabad', product: 'Water Purifier', quantity: 20, status: 'Approved' },
-    { id: 'ORD-5006', retailer: 'Kitchen Zone Mumbai', product: 'Microwave Oven', quantity: 8, status: 'Pending' },
-  ];
+  const initialOrders = [];
 
   const [orders, setOrders] = useState(initialOrders);
   const [searchTerm, setSearchTerm] = useState('');

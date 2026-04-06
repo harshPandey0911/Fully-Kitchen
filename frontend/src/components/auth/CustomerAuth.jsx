@@ -7,6 +7,7 @@ import { customerAuthApi } from '../../services/customerAuthApi';
 import { APP_LOGO, APP_NAME, APP_STORAGE_PREFIX } from '../../constants/branding';
 
 const PREFILL_EMAIL_KEY = `${APP_STORAGE_PREFIX}CustomerPrefillEmail`;
+const SIGNUP_PREFILL_EMAIL_KEY = `${APP_STORAGE_PREFIX}CustomerSignupPrefillEmail`;
 
 const initialLoginForm = {
   email: '',
@@ -20,7 +21,7 @@ const initialSignupForm = {
   password: '',
 };
 
-const hasAtSymbol = (value) => String(value).includes('@');
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const UnderlineField = ({
   label,
@@ -72,6 +73,13 @@ const CustomerAuth = ({ mode = 'login' }) => {
         setLoginForm((current) => ({ ...current, email: prefillEmail }));
         sessionStorage.removeItem(PREFILL_EMAIL_KEY);
       }
+    } else {
+      const signupPrefillEmail = sessionStorage.getItem(SIGNUP_PREFILL_EMAIL_KEY);
+
+      if (signupPrefillEmail) {
+        setSignupForm((current) => ({ ...current, email: signupPrefillEmail }));
+        sessionStorage.removeItem(SIGNUP_PREFILL_EMAIL_KEY);
+      }
     }
   }, [mode]);
 
@@ -92,8 +100,8 @@ const CustomerAuth = ({ mode = 'login' }) => {
 
     if (!loginForm.email.trim()) {
       nextErrors.email = 'Email is required';
-    } else if (!hasAtSymbol(loginForm.email.trim())) {
-      nextErrors.email = 'Email must include @';
+    } else if (!emailPattern.test(loginForm.email.trim())) {
+      nextErrors.email = 'Enter a valid email address';
     }
 
     if (!loginForm.password) {
@@ -113,8 +121,8 @@ const CustomerAuth = ({ mode = 'login' }) => {
 
     if (!signupForm.email.trim()) {
       nextErrors.email = 'Email is required';
-    } else if (!hasAtSymbol(signupForm.email.trim())) {
-      nextErrors.email = 'Email must include @';
+    } else if (!emailPattern.test(signupForm.email.trim())) {
+      nextErrors.email = 'Enter a valid email address';
     }
 
     if (!signupForm.password) {
@@ -173,6 +181,13 @@ const CustomerAuth = ({ mode = 'login' }) => {
       toast.success(`Welcome back, ${String(loginData.userName).split(/[ _]/)[0]}!`);
       navigate(dashboardPath);
     } catch (error) {
+      if (error.code === 'ACCOUNT_NOT_FOUND') {
+        sessionStorage.setItem(SIGNUP_PREFILL_EMAIL_KEY, trimmedEmail);
+        toast.error('No customer account found. Please sign up first.');
+        switchMode('signup');
+        return;
+      }
+
       setLoginErrors((current) => ({
         ...current,
         password: error.message,

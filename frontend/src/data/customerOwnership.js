@@ -1,5 +1,4 @@
 import { customerProducts } from './customerProducts';
-import { APP_NAME } from '../constants/branding';
 
 const productImages = {
   'Mixer Grinder': customerProducts.find((product) => product.name === 'Mixer Grinder Pro')?.image || customerProducts[0]?.image || '',
@@ -10,114 +9,16 @@ const productImages = {
   Toaster: customerProducts.find((product) => product.name === 'Toaster Duo')?.image || customerProducts[5]?.image || '',
 };
 
-export const ownershipProductOptions = [
-  { name: 'Mixer Grinder', image: productImages['Mixer Grinder'] },
-  { name: 'Microwave Oven', image: productImages['Microwave Oven'] },
-  { name: 'Air Fryer', image: productImages['Air Fryer'] },
-  { name: 'Refrigerator', image: productImages.Refrigerator },
-  { name: 'Electric Kettle', image: productImages['Electric Kettle'] },
-  { name: 'Toaster', image: productImages.Toaster },
-];
+export const ownershipProductOptions = [];
 
 export const warrantyPeriodOptions = [6, 12, 18, 24, 36, 48];
 export const serviceIssueTypes = ['Repair', 'Installation', 'Replacement'];
 
-export const initialOwnedProducts = [
-  {
-    id: 'prd-1001',
-    productName: 'Mixer Grinder',
-    brand: APP_NAME,
-    modelNumber: 'KH-MX500',
-    purchaseDate: '2025-05-14',
-    warrantyMonths: 24,
-    invoiceName: 'mixer-invoice.pdf',
-  },
-  {
-    id: 'prd-1002',
-    productName: 'Microwave Oven',
-    brand: 'HomeCore',
-    modelNumber: 'HC-MW22L',
-    purchaseDate: '2025-04-08',
-    warrantyMonths: 12,
-    invoiceName: 'microwave-bill.pdf',
-  },
-  {
-    id: 'prd-1003',
-    productName: 'Air Fryer',
-    brand: 'QuickChef',
-    modelNumber: 'QC-AF360',
-    purchaseDate: '2024-01-12',
-    warrantyMonths: 12,
-    invoiceName: '',
-  },
-  {
-    id: 'prd-1004',
-    productName: 'Refrigerator',
-    brand: APP_NAME,
-    modelNumber: 'KH-RF420',
-    purchaseDate: '2025-08-20',
-    warrantyMonths: 24,
-    invoiceName: 'refrigerator-invoice.pdf',
-  },
-];
+export const initialOwnedProducts = [];
 
-export const initialServiceRequests = [
-  {
-    id: 'SR-4101',
-    productId: 'prd-1001',
-    productName: 'Mixer Grinder',
-    issueType: 'Repair',
-    description: 'Motor overheats during longer grinding cycles.',
-    status: 'In Progress',
-    assignedTechnician: 'Rohit Menon',
-    imageName: 'motor-panel.jpg',
-    createdAt: '2026-04-01T10:20:00',
-    updatedAt: '2026-04-02T15:10:00',
-  },
-  {
-    id: 'SR-4102',
-    productId: 'prd-1002',
-    productName: 'Microwave Oven',
-    issueType: 'Installation',
-    description: 'Need help with setup and first-time configuration.',
-    status: 'Pending',
-    assignedTechnician: 'Unassigned',
-    imageName: '',
-    createdAt: '2026-04-03T08:35:00',
-    updatedAt: '2026-04-03T08:35:00',
-  },
-  {
-    id: 'SR-4095',
-    productId: 'prd-1003',
-    productName: 'Air Fryer',
-    issueType: 'Replacement',
-    description: 'Basket coating was peeling after repeated use.',
-    status: 'Completed',
-    assignedTechnician: 'Ananya Shah',
-    imageName: 'basket-issue.png',
-    createdAt: '2026-03-24T13:15:00',
-    updatedAt: '2026-03-27T17:00:00',
-  },
-];
+export const initialServiceRequests = [];
 
-const staticOrderNotifications = [
-  {
-    id: 'order-1001',
-    type: 'order',
-    tone: 'info',
-    title: 'Accessory order dispatched',
-    message: 'Your replacement glass tray for the Microwave Oven is on the way.',
-    createdAt: '2026-04-02T09:00:00',
-  },
-  {
-    id: 'order-1002',
-    type: 'order',
-    tone: 'success',
-    title: 'Starter kit delivered',
-    message: 'Your Air Fryer starter accessories were delivered successfully.',
-    createdAt: '2026-03-29T18:10:00',
-  },
-];
+const staticOrderNotifications = [];
 
 const startOfDay = (value) => {
   const date = new Date(value);

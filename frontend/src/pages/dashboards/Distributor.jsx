@@ -16,6 +16,7 @@ import { APP_DOMAIN, APP_NAME } from '../../constants/branding';
 import { customerProductsApi } from '../../services/customerProductsApi';
 import { distributorsApi } from '../../services/distributorsApi';
 import { inventoryProductsApi } from '../../services/inventoryProductsApi';
+import { restockRequestsApi } from '../../services/restockRequestsApi';
 import { serviceRequestsApi } from '../../services/serviceRequestsApi';
 
 const sections = [
@@ -34,31 +35,12 @@ const sections = [
   { heading: 'System', items: [{ id: 'logout', label: 'Logout', icon: 'logout', action: 'logout' }] },
 ];
 
-const initialOrders = [
-  { id: 1, orderNo: 'ORD-4101', retailer: 'Prime Kitchen Store', product: 'Mixer Grinder', quantity: 12, destination: 'Mumbai', status: 'Pending Dispatch' },
-  { id: 2, orderNo: 'ORD-4102', retailer: 'HomeEase Appliances', product: 'Electric Kettle', quantity: 18, destination: 'Delhi', status: 'Dispatched' },
-  { id: 3, orderNo: 'ORD-4103', retailer: 'CityMart Retail', product: 'Air Fryer', quantity: 7, destination: 'Bangalore', status: 'Delivered' },
-  { id: 4, orderNo: 'ORD-4104', retailer: 'Urban Kitchen Appliance', product: 'Microwave Oven', quantity: 5, destination: 'Pune', status: 'Pending Dispatch' },
-];
-
-const initialRestockRequests = [
-  { id: 1, retailer: 'Prime Kitchen Store', product: 'Mixer Grinder', quantity: 20, location: 'Mumbai', requestedOn: '29 Mar 2026', status: 'Pending' },
-  { id: 2, retailer: 'Smart Living Retail', product: 'Induction Cooktop', quantity: 14, location: 'Hyderabad', requestedOn: '30 Mar 2026', status: 'Pending' },
-  { id: 3, retailer: 'Urban Kitchen Appliance', product: 'Air Fryer', quantity: 10, location: 'Pune', requestedOn: '31 Mar 2026', status: 'Accepted' },
-  { id: 4, retailer: 'HomeEase Appliances', product: 'Microwave Oven', quantity: 8, location: 'Delhi', requestedOn: '01 Apr 2026', status: 'Rejected' },
-];
-
-const performanceData = [
-  { name: 'Nov', handled: 82 },
-  { name: 'Dec', handled: 95 },
-  { name: 'Jan', handled: 104 },
-  { name: 'Feb', handled: 98 },
-  { name: 'Mar', handled: 118 },
-  { name: 'Apr', handled: 124 },
-];
+const initialOrders = [];
 
 const initialDistributorForm = { name: '', email: '', password: '', phone: '', location: '', status: 'Active' };
 const initialStockForm = { availableQty: '', status: 'In Stock' };
+const initialProductForm = { name: '', category: 'Kitchen', price: '', quantity: '' };
+const productCategories = ['Kitchen', 'Cooking', 'Laundry', 'Cooling', 'Water'];
 
 const cardClass = 'panel-hover-card rounded-xl border border-gray-200 bg-white p-5 shadow-sm';
 const panelClass = 'panel-hover-surface overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm';
@@ -108,7 +90,7 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
   const [registeredProducts, setRegisteredProducts] = useState([]);
   const [customerServiceRequests, setCustomerServiceRequests] = useState([]);
   const [orders, setOrders] = useState(initialOrders);
-  const [restockRequests, setRestockRequests] = useState(initialRestockRequests);
+  const [restockRequests, setRestockRequests] = useState([]);
   const [showDistributorModal, setShowDistributorModal] = useState(false);
   const [editingDistributorId, setEditingDistributorId] = useState(null);
   const [distributorForm, setDistributorForm] = useState(initialDistributorForm);
@@ -123,9 +105,14 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
   const [registeredProductsError, setRegisteredProductsError] = useState('');
   const [customerServiceRequestsLoading, setCustomerServiceRequestsLoading] = useState(false);
   const [customerServiceRequestsError, setCustomerServiceRequestsError] = useState('');
+  const [restockRequestsLoading, setRestockRequestsLoading] = useState(false);
+  const [restockRequestsError, setRestockRequestsError] = useState('');
   const [showStockModal, setShowStockModal] = useState(false);
   const [editingInventoryItem, setEditingInventoryItem] = useState(null);
   const [stockForm, setStockForm] = useState(initialStockForm);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [productForm, setProductForm] = useState(initialProductForm);
+  const [productSaving, setProductSaving] = useState(false);
 
   useEffect(() => {
     setActiveSection(routeSection);
@@ -289,6 +276,48 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
     };
   }, [activeSection]);
 
+  useEffect(() => {
+    if (!['restock', 'dashboard'].includes(activeSection)) {
+      return undefined;
+    }
+
+    let isCancelled = false;
+
+    const loadRestockRequests = async () => {
+      setRestockRequestsLoading(true);
+      setRestockRequestsError('');
+
+      try {
+        const response = await restockRequestsApi.list();
+
+        if (isCancelled) {
+          return;
+        }
+
+        setRestockRequests(response.restockRequests || []);
+      } catch (error) {
+        if (isCancelled) {
+          return;
+        }
+
+        setRestockRequests([]);
+        setRestockRequestsError(error.message || 'Unable to load restock requests.');
+      } finally {
+        if (!isCancelled) {
+          setRestockRequestsLoading(false);
+        }
+      }
+    };
+
+    loadRestockRequests();
+    const refreshTimer = window.setInterval(loadRestockRequests, 10000);
+
+    return () => {
+      isCancelled = true;
+      window.clearInterval(refreshTimer);
+    };
+  }, [activeSection]);
+
   const userName = JSON.parse(localStorage.getItem('loginData') || '{}')?.userName || 'Distributor User';
   const query = searchQuery.trim().toLowerCase();
   const matchesSearch = (values) => !query || values.some((value) => String(value).toLowerCase().includes(query));
@@ -323,7 +352,22 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
     [customerServiceRequests, query]
   );
   const filteredOrders = useMemo(() => orders.filter((item) => matchesSearch([item.orderNo, item.retailer, item.product, item.quantity, item.destination, item.status])), [orders, query]);
-  const filteredRequests = useMemo(() => restockRequests.filter((item) => matchesSearch([item.retailer, item.product, item.quantity, item.location, item.requestedOn, item.status])), [restockRequests, query]);
+  const filteredRequests = useMemo(
+    () =>
+      restockRequests.filter((item) =>
+        matchesSearch([
+          item.retailerName,
+          item.retailerEmail,
+          item.productName,
+          item.brand,
+          item.modelNumber,
+          item.customerName,
+          item.customerEmail,
+          item.requestNote,
+          item.status,
+        ])),
+    [restockRequests, query]
+  );
 
   const totalOrders = orders.length;
   const activeDistributors = distributors.filter((item) => item.status === 'Active').length;
@@ -355,7 +399,7 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
     { title: 'Pending Requests', value: String(pendingRequests), meta: 'Waiting for review' },
     { title: 'Accepted', value: String(restockRequests.filter((item) => item.status === 'Accepted').length), meta: 'Approved for dispatch' },
     { title: 'Rejected', value: String(restockRequests.filter((item) => item.status === 'Rejected').length), meta: 'Closed requests' },
-    { title: 'Service Requests', value: String(customerServiceRequests.length), meta: 'Raised by customers' },
+    { title: 'Requested Items', value: String(restockRequests.length), meta: 'Total restock asks' },
   ];
   const performanceStats = [
     { title: 'Orders Handled', value: String(totalOrders), meta: 'Current distributor workload' },
@@ -363,6 +407,40 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
     { title: 'Pending Requests', value: String(pendingRequests), meta: 'Requests still open' },
     { title: 'Delivery Completion', value: `${fulfillmentRate}%`, meta: 'Completed dispatch lifecycle' },
   ];
+  const performanceData = useMemo(() => {
+    const formatter = new Intl.DateTimeFormat('en-IN', { month: 'short' });
+    const months = [];
+    const monthIndex = new Map();
+    const today = new Date();
+
+    for (let offset = 5; offset >= 0; offset -= 1) {
+      const date = new Date(today.getFullYear(), today.getMonth() - offset, 1);
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      monthIndex.set(key, months.length);
+      months.push({ name: formatter.format(date), handled: 0 });
+    }
+
+    restockRequests.forEach((item) => {
+      if (!item.createdAt) {
+        return;
+      }
+
+      const parsed = new Date(item.createdAt);
+      if (Number.isNaN(parsed.getTime())) {
+        return;
+      }
+
+      const key = `${parsed.getFullYear()}-${parsed.getMonth()}`;
+      const targetIndex = monthIndex.get(key);
+      if (targetIndex === undefined) {
+        return;
+      }
+
+      months[targetIndex].handled += 1;
+    });
+
+    return months;
+  }, [restockRequests]);
 
   const handleLogout = () => {
     localStorage.removeItem('loginData');
@@ -376,6 +454,55 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
   };
 
   const getTitle = () => sections.flatMap((section) => section.items).find((item) => item.id === activeSection)?.label || 'Dashboard';
+
+  const openProductModal = () => {
+    setProductForm(initialProductForm);
+    setShowProductModal(true);
+  };
+
+  const closeProductModal = () => {
+    setShowProductModal(false);
+    setProductForm(initialProductForm);
+  };
+
+  const handleProductSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!productForm.name.trim() || !productForm.category.trim()) {
+      toast.error('Please add a product name and category.');
+      return;
+    }
+
+    const payload = {
+      name: productForm.name.trim(),
+      category: productForm.category.trim(),
+      price: Number(productForm.price || 0),
+      quantity: Number.parseInt(productForm.quantity || '0', 10),
+    };
+
+    if (!Number.isFinite(payload.price) || payload.price < 0) {
+      toast.error('Enter a valid price.');
+      return;
+    }
+
+    if (!Number.isInteger(payload.quantity) || payload.quantity < 0) {
+      toast.error('Enter a valid stock quantity.');
+      return;
+    }
+
+    setProductSaving(true);
+
+    try {
+      const response = await inventoryProductsApi.create(payload);
+      setInventory((current) => [response.inventoryProduct, ...current]);
+      toast.success('Product added to distributor catalog.');
+      closeProductModal();
+    } catch (error) {
+      toast.error(error.message || 'Unable to add product.');
+    } finally {
+      setProductSaving(false);
+    }
+  };
 
   const openDistributorModal = (distributor = null) => {
     if (distributor) {
@@ -513,36 +640,19 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
       return;
     }
 
-    if (decision === 'Accepted') {
-      const inventoryItem = inventory.find((item) => item.product === request.product);
-      if (!inventoryItem || inventoryItem.availableQty < request.quantity) {
-        toast.error('Not enough stock available for this request.');
-        return;
-      }
-
-      const nextQuantity = inventoryItem.availableQty - request.quantity;
-
-      try {
-        const response = await inventoryProductsApi.update(inventoryItem.id, {
-          quantity: nextQuantity,
-          status: getStockStatus(nextQuantity),
-        });
-
-        setInventory((current) =>
-          current.map((item) =>
-            item.id === inventoryItem.id ? response.inventoryProduct : item,
-          ),
-        );
-      } catch (error) {
-        toast.error(error.message || 'Unable to update inventory for this request.');
-        return;
-      }
-
-      setOrders((current) => [{ id: Math.max(...current.map((item) => item.id), 0) + 1, orderNo: `ORD-${4100 + current.length + 1}`, retailer: request.retailer, product: request.product, quantity: request.quantity, destination: request.location, status: 'Pending Dispatch' }, ...current]);
+    try {
+      const response = await restockRequestsApi.updateStatus(requestId, decision);
+      setRestockRequests((current) =>
+        current.map((item) => (item.id === requestId ? response.restockRequest : item)),
+      );
+      toast.success(
+        decision === 'Accepted'
+          ? 'Restock request approved.'
+          : 'Restock request rejected.',
+      );
+    } catch (error) {
+      toast.error(error.message || 'Unable to update restock request.');
     }
-
-    setRestockRequests((current) => current.map((item) => (item.id === requestId ? { ...item, status: decision } : item)));
-    toast.success(decision === 'Accepted' ? 'Restock request approved and added to dispatch queue.' : 'Restock request rejected.');
   };
 
   const handleOrderProgress = (orderId) => {
@@ -719,9 +829,14 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
 
   const inventoryView = (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Inventory</h1>
-        <p className="mt-1 text-sm text-gray-500">Track stock operations and review products registered by customers.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Inventory</h1>
+          <p className="mt-1 text-sm text-gray-500">Track stock operations and review products registered by customers.</p>
+        </div>
+        <button type="button" onClick={openProductModal} className={primaryButtonClass}>
+          Add Product
+        </button>
       </div>
       {renderCards(inventoryStats)}
       {inventoryError ? (
@@ -736,7 +851,7 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
       ) : null}
       {renderTable(
         'Stock Overview',
-        'Products added by admin automatically appear here for distributor stock handling.',
+        'Products added by distributors appear here for stock handling.',
         [
           { key: 'product', label: 'Product', bold: true },
           { key: 'sku', label: 'SKU' },
@@ -797,23 +912,33 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Restock Requests</h1>
-        <p className="mt-1 text-sm text-gray-500">Accept or reject retailer restock requests and convert approved requests into dispatch orders.</p>
+        <p className="mt-1 text-sm text-gray-500">Review restock asks submitted by retailers and respond with approval status.</p>
       </div>
       {renderCards(requestStats)}
+      {restockRequestsError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {restockRequestsError}
+        </div>
+      ) : null}
       {renderTable(
         'Retailer Requests',
-        'Pending requests can be approved when stock is available.',
+        'Each row shows the retailer, product details, and why restock was requested.',
         [
-          { key: 'retailer', label: 'Retailer', bold: true },
-          { key: 'product', label: 'Product' },
-          { key: 'quantity', label: 'Quantity' },
-          { key: 'location', label: 'Location' },
-          { key: 'requestedOn', label: 'Requested On' },
+          { key: 'retailerName', label: 'Retailer', bold: true },
+          { key: 'retailerEmail', label: 'Email' },
+          { key: 'productName', label: 'Product' },
+          { key: 'brand', label: 'Brand' },
+          { key: 'modelNumber', label: 'Model' },
+          { key: 'customerName', label: 'Customer' },
+          { key: 'requestNote', label: 'Requirement', render: (row) => row.requestNote || 'Restock requested' },
+          { key: 'requestedQuantity', label: 'Qty' },
+          { key: 'createdAt', label: 'Requested On', render: (row) => formatDisplayDate(row.createdAt) },
           { key: 'status', label: 'Status', badge: true },
           { key: 'actions', label: 'Actions', render: (row) => row.status === 'Pending' ? <div className="flex items-center gap-2"><button type="button" onClick={() => handleRestockDecision(row.id, 'Accepted')} className={secondaryButtonClass}>Accept</button><button type="button" onClick={() => handleRestockDecision(row.id, 'Rejected')} className={secondaryButtonClass}>Reject</button></div> : <span className="text-sm text-gray-500">Processed</span> },
         ],
-        filteredRequests,
-        'id'
+        restockRequestsLoading ? [] : filteredRequests,
+        'id',
+        restockRequestsLoading ? 'Loading restock requests...' : 'No restock requests yet.'
       )}
       {customerServiceRequestsError ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -1001,6 +1126,70 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
     </div>
   ) : null;
 
+  const productModal = showProductModal ? (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="border-b border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900">Add Product</h2>
+          <p className="mt-1 text-sm text-gray-500">Share this product with retailers.</p>
+        </div>
+
+        <form onSubmit={handleProductSubmit} className="space-y-4 p-6">
+          <input
+            type="text"
+            placeholder="Product Name"
+            value={productForm.name}
+            onChange={(event) => setProductForm((current) => ({ ...current, name: event.target.value }))}
+            className={inputClass}
+            required
+          />
+          <select
+            value={productForm.category}
+            onChange={(event) => setProductForm((current) => ({ ...current, category: event.target.value }))}
+            className={selectClass}
+          >
+            {productCategories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            min="0"
+            placeholder="Price"
+            value={productForm.price}
+            onChange={(event) => setProductForm((current) => ({ ...current, price: event.target.value }))}
+            className={inputClass}
+            required
+          />
+          <input
+            type="number"
+            min="0"
+            placeholder="Stock Quantity"
+            value={productForm.quantity}
+            onChange={(event) => setProductForm((current) => ({ ...current, quantity: event.target.value }))}
+            className={inputClass}
+            required
+          />
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={closeProductModal} className={secondaryButtonClass}>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={productSaving}
+              className={`${primaryButtonClass} disabled:cursor-not-allowed disabled:opacity-50`}
+            >
+              {productSaving ? 'Saving...' : 'Add Product'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  ) : null;
+
   const handleMenuSelect = (item) => {
     if (item.action === 'logout') {
       handleLogout();
@@ -1012,12 +1201,13 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
 
   if (embedded) {
     return (
-      <>
-        <div className="space-y-6">{sectionView}</div>
-        {distributorModal}
-        {stockModal}
-      </>
-    );
+        <>
+          <div className="space-y-6">{sectionView}</div>
+          {distributorModal}
+          {stockModal}
+          {productModal}
+        </>
+      );
   }
 
   return (
@@ -1059,6 +1249,7 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
 
       {distributorModal}
       {stockModal}
+      {productModal}
     </>
   );
 };

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   FiBarChart2,
   FiBox,
+  FiClipboard,
   FiGrid,
   FiLock,
   FiLogOut,
@@ -29,6 +30,7 @@ const iconMap = {
   refresh: FiRefreshCcw,
   settings: FiSettings,
   store: FiShoppingBag,
+  ticket: FiClipboard,
   tool: FiTool,
   truck: FiTruck,
   users: FiUsers,

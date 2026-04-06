@@ -13,8 +13,7 @@ import CustomerProfile from '../customer/CustomerProfile';
 import EditProfile from '../customer/EditProfile';
 import {
   buildCustomerNotifications,
-  initialOwnedProducts,
-  initialServiceRequests,
+  getProductImage,
   ownershipProductOptions,
 } from '../../data/customerOwnership';
 import { APP_DOMAIN, APP_NAME } from '../../constants/branding';
@@ -24,6 +23,7 @@ import InlineFormSection from '../../components/customer/dashboard/InlineFormSec
 import ServiceRequestForm from '../../components/customer/service/ServiceRequestForm';
 import { customerProductsApi } from '../../services/customerProductsApi';
 import { serviceRequestsApi } from '../../services/serviceRequestsApi';
+import { retailerProductsApi } from '../../services/retailerProductsApi';
 
 const navItems = [
   { id: 'home', label: 'Home', path: '/customer/home', icon: LuHouse },
@@ -41,6 +41,8 @@ const technicianDirectory = {
   Installation: 'Aisha Verma',
   Replacement: 'Ananya Shah',
 };
+const legacyDummyProductIds = new Set(['prd-1001', 'prd-1002', 'prd-1003', 'prd-1004']);
+const legacyDummyServiceIds = new Set(['SR-4101', 'SR-4102', 'SR-4095']);
 
 const readStorage = (key, fallback) => {
   try {
@@ -50,6 +52,12 @@ const readStorage = (key, fallback) => {
     return fallback;
   }
 };
+
+const sanitizeStoredProducts = (items) =>
+  Array.isArray(items) ? items.filter((item) => !legacyDummyProductIds.has(String(item?.id || ''))) : [];
+
+const sanitizeStoredServiceRequests = (items) =>
+  Array.isArray(items) ? items.filter((item) => !legacyDummyServiceIds.has(String(item?.id || ''))) : [];
 
 const createId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
@@ -79,8 +87,11 @@ const CustomerDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [products, setProducts] = useState(() => readStorage('customerOwnedProducts', initialOwnedProducts));
-  const [serviceRequests, setServiceRequests] = useState(() => readStorage('customerServiceRequests', initialServiceRequests));
+  const [products, setProducts] = useState(() => sanitizeStoredProducts(readStorage('customerOwnedProducts', [])));
+  const [catalogProducts, setCatalogProducts] = useState([]);
+  const [serviceRequests, setServiceRequests] = useState(() =>
+    sanitizeStoredServiceRequests(readStorage('customerServiceRequests', [])),
+  );
   const [readNotificationIds, setReadNotificationIds] = useState(() => readStorage('customerReadNotificationIds', []));
   const [profile, setProfile] = useState(() => readStorage('customerProfile', getDefaultCustomerProfile()));
   const [openProfile, setOpenProfile] = useState(false);
@@ -95,6 +106,54 @@ const CustomerDashboard = () => {
   const resolvedPath = currentPath === registerModalPath ? lastContentPath : currentPath;
   const userName = profile.fullName || 'Customer';
   const avatarInitial = 'H';
+  const mergedProductOptions = useMemo(() => {
+    if (!Array.isArray(catalogProducts) || catalogProducts.length === 0) {
+      return ownershipProductOptions;
+    }
+
+    const uniqueNames = new Set(ownershipProductOptions.map((option) => option.name.toLowerCase()));
+    const catalogOptions = catalogProducts
+      .map((product) => product?.name)
+      .filter(Boolean)
+      .map((name) => String(name).trim())
+      .filter((name) => {
+        const key = name.toLowerCase();
+        if (!key || uniqueNames.has(key)) {
+          return false;
+        }
+        uniqueNames.add(key);
+        return true;
+      })
+      .map((name) => ({
+        name,
+        image: getProductImage(name),
+      }));
+
+    return [...ownershipProductOptions, ...catalogOptions];
+  }, [catalogProducts]);
+  const catalogProductCards = useMemo(() => {
+    const registeredNames = new Set(
+      products.map((product) => String(product.productName || '').trim().toLowerCase()).filter(Boolean),
+    );
+
+    return (catalogProducts || [])
+      .filter((product) => {
+        const name = String(product?.name || '').trim().toLowerCase();
+        return name && !registeredNames.has(name);
+      })
+      .map((product) => ({
+        id: `catalog-${product.id}`,
+        productName: product.name,
+        brand: product.category || 'Retailer Inventory',
+        modelNumber: product.sku || 'N/A',
+        purchaseDate: '',
+        warrantyMonths: 0,
+        invoiceName: '',
+        priceLabel: product.priceLabel || '',
+        isRegistered: false,
+      }));
+  }, [catalogProducts, products]);
+  const displayProducts = useMemo(() => [...products, ...catalogProductCards], [products, catalogProductCards]);
   const activeNavId = activeInlineForm
     ? activeInlineForm
     : profilePaths.includes(resolvedPath)
@@ -105,6 +164,30 @@ const CustomerDashboard = () => {
   useEffect(() => {
     localStorage.setItem('customerOwnedProducts', JSON.stringify(products));
   }, [products]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadCatalogProducts = async () => {
+      try {
+        const response = await retailerProductsApi.list();
+        if (isCancelled) {
+          return;
+        }
+        setCatalogProducts(Array.isArray(response.retailerProducts) ? response.retailerProducts : []);
+      } catch {
+        // Keep existing catalog state when backend data is unavailable.
+      }
+    };
+
+    loadCatalogProducts();
+    const refreshTimer = window.setInterval(loadCatalogProducts, 10000);
+
+    return () => {
+      isCancelled = true;
+      window.clearInterval(refreshTimer);
+    };
+  }, []);
 
   useEffect(() => {
     let isCancelled = false;
@@ -416,7 +499,7 @@ const CustomerDashboard = () => {
   const renderPage = () => {
     switch (resolvedPath) {
       case '/customer/products':
-        return <MyProducts products={products} onNavigate={navigateWithScroll} />;
+        return <MyProducts products={displayProducts} onNavigate={navigateWithScroll} />;
       case '/customer/service':
         return (
           <ServiceRequests
@@ -499,7 +582,7 @@ const CustomerDashboard = () => {
 
       <main className="mx-auto min-h-screen w-full max-w-[420px] px-4 pb-32 pt-[112px]">
         <InlineFormSection open={activeInlineForm === 'register'} title="Register Product" onClose={closeInlineForm}>
-          <RegisterProduct productOptions={ownershipProductOptions} onSubmit={handleRegisterProduct} onCancel={closeInlineForm} />
+          <RegisterProduct productOptions={mergedProductOptions} onSubmit={handleRegisterProduct} onCancel={closeInlineForm} />
         </InlineFormSection>
 
         <InlineFormSection open={activeInlineForm === 'service'} title="Raise Service Request" onClose={closeInlineForm}>

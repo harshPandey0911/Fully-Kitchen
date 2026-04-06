@@ -1,5 +1,29 @@
-import { frontendDataStore } from './frontendDataStore';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+
+const parseJsonSafely = async (response) => {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+};
 
 export const distributorAuthApi = {
-  login: async (payload) => frontendDataStore.authenticateDistributor(payload),
+  login: async (payload) => {
+    const response = await fetch(`${API_BASE_URL}/api/distributor/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await parseJsonSafely(response);
+
+    if (!response.ok) {
+      throw new Error(data?.message || 'Unable to log in as distributor.');
+    }
+
+    return data;
+  },
 };

@@ -7,5 +7,11 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
     host: true,
+    proxy: {
+      '/api': {
+        target: process.env.VITE_BACKEND_PROXY_TARGET || 'http://127.0.0.1:5000',
+        changeOrigin: true,
+      },
+    },
   },
 })

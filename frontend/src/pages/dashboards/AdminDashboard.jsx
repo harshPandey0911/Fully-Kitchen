@@ -4,6 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import ModernDashboard from '../../components/admin/ModernDashboard';
 import Inventory from '../../components/admin/Inventory';
 import Orders from '../../components/admin/Orders';
+import Customers from '../../components/admin/Customers';
+import RegisteredProducts from '../../components/admin/RegisteredProducts';
+import RestockRequests from '../../components/admin/RestockRequests';
 import SubAdminsManagement from '../../components/admin/SubAdminsManagement';
 import Reports from '../../components/admin/Reports';
 import ServiceRequests from '../../components/admin/ServiceRequests';
@@ -30,7 +33,9 @@ const menuItems = [
       { id: 'subadmins', label: 'Sub Admins', icon: 'users' },
       { id: 'business-rules', label: 'Business Rules', icon: 'settings' },
       { id: 'inventory-alerts', label: 'Inventory', icon: 'box' },
+      { id: 'registered-products', label: 'Registered Products', icon: 'box' },
       { id: 'stock-requests', label: 'Orders', icon: 'cart' },
+      { id: 'customers', label: 'Customers', icon: 'users' },
       { id: 'distributor-performance', label: 'Distributors', icon: 'truck' },
       { id: 'retailer-performance', label: 'Retailers', icon: 'store' },
     ],
@@ -41,7 +46,10 @@ const menuItems = [
   },
   {
     heading: 'Support',
-    items: [{ id: 'service-requests', label: 'Service Requests', icon: 'tool' }],
+    items: [
+      { id: 'service-requests', label: 'Service Requests', icon: 'tool' },
+      { id: 'restock-requests', label: 'Restock Requests', icon: 'refresh' },
+    ],
   },
   {
     heading: 'System',
@@ -110,10 +118,16 @@ const AdminDashboard = () => {
         return <ModernDashboard />;
       case 'inventory-alerts':
         return <Inventory />;
+      case 'registered-products':
+        return <RegisteredProducts />;
       case 'stock-requests':
         return <Orders />;
+      case 'customers':
+        return <Customers />;
       case 'service-requests':
         return <ServiceRequests />;
+      case 'restock-requests':
+        return <RestockRequests />;
       case 'subadmins':
         return <SubAdminsManagement />;
       case 'business-rules':

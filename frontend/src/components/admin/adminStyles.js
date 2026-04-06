@@ -27,6 +27,7 @@ export const adminUi = {
 export const statusBadge = (status) => {
   switch (status) {
     case 'Approved':
+    case 'Accepted':
     case 'Delivered':
     case 'Active':
     case 'Completed':

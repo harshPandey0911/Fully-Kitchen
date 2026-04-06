@@ -21,12 +21,6 @@ const DEFAULT_ADMIN = {
 };
 
 const DEFAULT_INVENTORY_ITEMS = [
-  { name: 'Induction Cooktop', category: 'Cooking', price: 12499, quantity: 45, sku: 'ADM-IC-124' },
-  { name: 'Washing Machine', category: 'Laundry', price: 34999, quantity: 8, sku: 'ADM-WM-349' },
-  { name: 'Refrigerator', category: 'Cooling', price: 48500, quantity: 22, sku: 'ADM-RF-485' },
-  { name: 'Mixer Grinder', category: 'Kitchen', price: 3199, quantity: 65, sku: 'ADM-MG-319' },
-  { name: 'Water Purifier', category: 'Water', price: 15800, quantity: 5, sku: 'ADM-WP-158' },
-  { name: 'Microwave Oven', category: 'Cooking', price: 8999, quantity: 12, sku: 'ADM-MO-899' },
 ];
 
 const canUseStorage = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined';
@@ -351,22 +345,8 @@ const buildSeedCustomerActivity = (customer) => {
 };
 
 const ensureCustomerSeedData = (db, customer) => {
-  const email = normalizeEmail(customer.email);
-
-  if (!email) {
-    return;
-  }
-
-  const hasProducts = db.customerProducts.some((item) => item.customerEmail === email);
-  const hasRequests = db.serviceRequests.some((item) => item.customerEmail === email);
-
-  if (hasProducts || hasRequests) {
-    return;
-  }
-
-  const { seededProducts, seededRequests } = buildSeedCustomerActivity(customer);
-  db.customerProducts = [...seededProducts, ...db.customerProducts];
-  db.serviceRequests = [...seededRequests, ...db.serviceRequests];
+  void db;
+  void customer;
 };
 
 const normalizeSavedDb = (value) => {

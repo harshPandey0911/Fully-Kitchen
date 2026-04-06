@@ -25,13 +25,25 @@ export default function RegisterForm({
       <form className="mt-5 space-y-[18px]" onSubmit={onSubmit}>
         <label className="block">
           <span className={labelClass}>Product Name</span>
-          <select name="productName" value={form.productName} onChange={onChange} className={selectClass} required>
-            {productOptions.map((option) => (
-              <option key={option.name} value={option.name}>
-                {option.name}
-              </option>
-            ))}
-          </select>
+          {productOptions.length > 0 ? (
+            <select name="productName" value={form.productName} onChange={onChange} className={selectClass} required>
+              {productOptions.map((option) => (
+                <option key={option.name} value={option.name}>
+                  {option.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              name="productName"
+              value={form.productName}
+              onChange={onChange}
+              className={inputClass}
+              placeholder="Enter product name"
+              required
+            />
+          )}
         </label>
 
         <label className="block">

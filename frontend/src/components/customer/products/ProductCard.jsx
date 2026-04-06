@@ -8,12 +8,17 @@ const statusStyles = {
 };
 
 export default function ProductCard({ product }) {
-  const statusLabel = product.warranty.status === 'expired'
-    ? 'Expired'
-    : product.warranty.daysRemaining <= 30
-      ? 'Expiring'
-      : 'Active';
-  const statusClass = statusStyles[statusLabel.toLowerCase()] || statusStyles.active;
+  const hasWarranty = product.warranty && product.warranty.status !== 'unknown';
+  const statusLabel = hasWarranty
+    ? product.warranty.status === 'expired'
+      ? 'Expired'
+      : product.warranty.daysRemaining <= 30
+        ? 'Expiring'
+        : 'Active'
+    : product.priceLabel
+      ? 'Available'
+      : 'Not registered';
+  const statusClass = statusStyles[statusLabel.toLowerCase()] || 'bg-[#F4ECE7] text-[#8B5E3C]';
 
   return (
     <article className="overflow-hidden rounded-[22px] bg-white !shadow-[0_14px_34px_rgba(30,30,30,0.08)] transition-all duration-300 ease-out active:scale-95">
@@ -34,23 +39,35 @@ export default function ProductCard({ product }) {
           <div className="flex items-center gap-2 text-[11px] text-[#6B6B6B]">
             <LuBell className="h-3.5 w-3.5 flex-none text-[#8B5E3C]" />
             <span className="truncate">
-              {product.warranty.status === 'expired'
-                ? `Expired on ${formatDisplayDate(product.warranty.expiryDate)}`
-                : `${product.warranty.daysRemaining} days remaining`}
+              {hasWarranty
+                ? product.warranty.status === 'expired'
+                  ? `Expired on ${formatDisplayDate(product.warranty.expiryDate)}`
+                  : `${product.warranty.daysRemaining} days remaining`
+                : product.priceLabel
+                  ? 'Available in retailer inventory. Register to activate warranty'
+                  : 'Register to activate warranty'}
             </span>
           </div>
 
           <div className="flex items-center gap-2 text-[11px] text-[#6B6B6B]">
             <LuPackage className="h-3.5 w-3.5 flex-none text-[#8B5E3C]" />
-            <span className="truncate">{product.modelNumber}</span>
+            <span className="truncate">{product.modelNumber || 'Model not set'}</span>
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-2 text-[10px] text-[#6B6B6B]">
-          <span className="rounded-full bg-[#F4ECE7] px-2.5 py-1 font-medium text-[#8B5E3C]">
-            {product.warrantyMonths} months
-          </span>
-          <span className="truncate">Expires {formatDisplayDate(product.warranty.expiryDate)}</span>
+          {hasWarranty ? (
+            <>
+              <span className="rounded-full bg-[#F4ECE7] px-2.5 py-1 font-medium text-[#8B5E3C]">
+                {product.warrantyMonths} months
+              </span>
+              <span className="truncate">Expires {formatDisplayDate(product.warranty.expiryDate)}</span>
+            </>
+          ) : (
+            <span className="rounded-full bg-[#F4ECE7] px-2.5 py-1 font-medium text-[#8B5E3C]">
+              {product.priceLabel || 'Register product'}
+            </span>
+          )}
         </div>
       </div>
     </article>
