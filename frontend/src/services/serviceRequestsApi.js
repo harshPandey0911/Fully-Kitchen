@@ -22,6 +22,37 @@ const canUseLocalFallback = (response, data, expectedKey) => {
   return response.status === 404 || response.status === 405 || response.status >= 500 || !data?.message;
 };
 
+const mergeServiceRequests = (primary = [], secondary = []) => {
+  const merged = new Map();
+
+  [...secondary, ...primary].forEach((item) => {
+    if (!item || typeof item !== 'object') {
+      return;
+    }
+
+    const key =
+      item.id ||
+      [
+        item.customerEmail || '',
+        item.productId || '',
+        item.productName || '',
+        item.issueType || '',
+        item.createdAt || '',
+      ].join('::');
+
+    if (!key) {
+      return;
+    }
+
+    const current = merged.get(key) || {};
+    merged.set(key, { ...current, ...item });
+  });
+
+  return Array.from(merged.values()).sort(
+    (left, right) => new Date(right.updatedAt || right.createdAt || 0).getTime() - new Date(left.updatedAt || left.createdAt || 0).getTime(),
+  );
+};
+
 export const serviceRequestsApi = {
   list: async (customerEmail = '') => {
     const url = new URL(`${API_BASE_URL}/api/service-requests`, window.location.origin);
@@ -29,16 +60,22 @@ export const serviceRequestsApi = {
       url.searchParams.set('customerEmail', customerEmail);
     }
 
+    const localResponse = frontendDataStore.listServiceRequests(customerEmail);
+    const localRequests = Array.isArray(localResponse?.serviceRequests) ? localResponse.serviceRequests : [];
+
     try {
       const response = await fetch(url.toString(), { method: 'GET' });
       const data = await parseJsonSafely(response);
 
       if (response.ok && Array.isArray(data?.serviceRequests)) {
-        return data;
+        return {
+          ...data,
+          serviceRequests: mergeServiceRequests(data.serviceRequests, localRequests),
+        };
       }
 
       if (canUseLocalFallback(response, data, 'serviceRequests')) {
-        return frontendDataStore.listServiceRequests(customerEmail);
+        return localResponse;
       }
 
       throw new Error(data?.message || 'Unable to load service requests.');
@@ -47,7 +84,7 @@ export const serviceRequestsApi = {
         throw error;
       }
 
-      return frontendDataStore.listServiceRequests(customerEmail);
+      return localResponse;
     }
   },
   create: async (payload) => {
