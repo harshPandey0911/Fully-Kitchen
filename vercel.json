@@ -1,13 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "vite",
-  "installCommand": "if [ -f package.json ]; then npm install; elif [ -f frontend/package.json ]; then cd frontend && npm install; fi",
-  "buildCommand": "if [ -f package.json ]; then npm run build; elif [ -f frontend/package.json ]; then cd frontend && npm run build && cd .. && rm -rf dist && mv frontend/dist dist; fi",
-  "outputDirectory": "dist",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+  "experimentalServices": {
+    "frontend": {
+      "entrypoint": "frontend",
+      "framework": "vite",
+      "routePrefix": "/"
+    },
+    "backend": {
+      "entrypoint": "backend",
+      "framework": "express",
+      "routePrefix": "/api"
     }
-  ]
+  }
 }
