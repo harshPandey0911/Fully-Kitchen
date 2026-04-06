@@ -16,9 +16,37 @@ import {
 import { adminUi, statusBadge } from './adminStyles';
 
 const Reports = () => {
-  const monthlySalesData = [];
-  const productSalesData = [];
-  const categoryData = [];
+  const monthlySalesData = [
+    { month: 'Jan', sales: 45000, orders: 156, revenue: 8900000 },
+    { month: 'Feb', sales: 52000, orders: 178, revenue: 9650000 },
+    { month: 'Mar', sales: 48000, orders: 165, revenue: 9200000 },
+    { month: 'Apr', sales: 61000, orders: 210, revenue: 11500000 },
+    { month: 'May', sales: 55000, orders: 189, revenue: 10300000 },
+    { month: 'Jun', sales: 67000, orders: 225, revenue: 12450000 },
+    { month: 'Jul', sales: 72000, orders: 245, revenue: 13200000 },
+    { month: 'Aug', sales: 68000, orders: 230, revenue: 12800000 },
+    { month: 'Sep', sales: 58000, orders: 195, revenue: 10900000 },
+    { month: 'Oct', sales: 75000, orders: 260, revenue: 14100000 },
+    { month: 'Nov', sales: 82000, orders: 285, revenue: 15300000 },
+    { month: 'Dec', sales: 88000, orders: 310, revenue: 16500000 },
+  ];
+
+  const productSalesData = [
+    { product: 'Induction Cooktop', units: 245, revenue: 2940000 },
+    { product: 'Washing Machine', units: 189, revenue: 3150000 },
+    { product: 'Refrigerator', units: 167, revenue: 4175000 },
+    { product: 'Mixer Grinder', units: 312, revenue: 1560000 },
+    { product: 'Water Purifier', units: 198, revenue: 1485000 },
+    { product: 'Microwave Oven', units: 156, revenue: 1560000 },
+  ];
+
+  const categoryData = [
+    { name: 'Cooking', value: 35, revenue: 4200000 },
+    { name: 'Laundry', value: 28, revenue: 3350000 },
+    { name: 'Cooling', value: 22, revenue: 4175000 },
+    { name: 'Kitchen', value: 10, revenue: 3045000 },
+    { name: 'Water', value: 5, revenue: 1485000 },
+  ];
 
   const colors = ['#1d4ed8', '#3b82f6', '#60a5fa', '#94a3b8', '#64748b'];
   const totalRevenue = monthlySalesData.reduce((sum, item) => sum + item.revenue, 0);

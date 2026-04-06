@@ -35,7 +35,21 @@ const sections = [
   { heading: 'System', items: [{ id: 'logout', label: 'Logout', icon: 'logout', action: 'logout' }] },
 ];
 
-const initialOrders = [];
+const initialOrders = [
+  { id: 1, orderNo: 'ORD-4101', retailer: 'Prime Kitchen Store', product: 'Mixer Grinder', quantity: 12, destination: 'Mumbai', status: 'Pending Dispatch' },
+  { id: 2, orderNo: 'ORD-4102', retailer: 'HomeEase Appliances', product: 'Electric Kettle', quantity: 18, destination: 'Delhi', status: 'Dispatched' },
+  { id: 3, orderNo: 'ORD-4103', retailer: 'CityMart Retail', product: 'Air Fryer', quantity: 7, destination: 'Bangalore', status: 'Delivered' },
+  { id: 4, orderNo: 'ORD-4104', retailer: 'Urban Kitchen Appliance', product: 'Microwave Oven', quantity: 5, destination: 'Pune', status: 'Pending Dispatch' },
+];
+
+const performanceData = [
+  { name: 'Nov', handled: 82 },
+  { name: 'Dec', handled: 95 },
+  { name: 'Jan', handled: 104 },
+  { name: 'Feb', handled: 98 },
+  { name: 'Mar', handled: 118 },
+  { name: 'Apr', handled: 124 },
+];
 
 const initialDistributorForm = { name: '', email: '', password: '', phone: '', location: '', status: 'Active' };
 const initialStockForm = { availableQty: '', status: 'In Stock' };
@@ -407,41 +421,6 @@ const Distributor = ({ embedded = false, initialSection = 'dashboard' }) => {
     { title: 'Pending Requests', value: String(pendingRequests), meta: 'Requests still open' },
     { title: 'Delivery Completion', value: `${fulfillmentRate}%`, meta: 'Completed dispatch lifecycle' },
   ];
-  const performanceData = useMemo(() => {
-    const formatter = new Intl.DateTimeFormat('en-IN', { month: 'short' });
-    const months = [];
-    const monthIndex = new Map();
-    const today = new Date();
-
-    for (let offset = 5; offset >= 0; offset -= 1) {
-      const date = new Date(today.getFullYear(), today.getMonth() - offset, 1);
-      const key = `${date.getFullYear()}-${date.getMonth()}`;
-      monthIndex.set(key, months.length);
-      months.push({ name: formatter.format(date), handled: 0 });
-    }
-
-    restockRequests.forEach((item) => {
-      if (!item.createdAt) {
-        return;
-      }
-
-      const parsed = new Date(item.createdAt);
-      if (Number.isNaN(parsed.getTime())) {
-        return;
-      }
-
-      const key = `${parsed.getFullYear()}-${parsed.getMonth()}`;
-      const targetIndex = monthIndex.get(key);
-      if (targetIndex === undefined) {
-        return;
-      }
-
-      months[targetIndex].handled += 1;
-    });
-
-    return months;
-  }, [restockRequests]);
-
   const handleLogout = () => {
     localStorage.removeItem('loginData');
     localStorage.removeItem('role');

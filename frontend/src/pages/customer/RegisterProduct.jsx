@@ -45,6 +45,7 @@ const initialFormState = (productOptions) => ({
   purchaseDate: '',
   warrantyMonths: String(warrantyPeriodOptions[1] || 12),
   invoiceName: '',
+  invoiceFile: null,
 });
 
 export default function RegisterProduct({ productOptions, onSubmit, onCancel }) {
@@ -66,8 +67,9 @@ export default function RegisterProduct({ productOptions, onSubmit, onCancel }) 
   };
 
   const handleFileChange = (event) => {
+    const invoiceFile = event.target.files?.[0] || null;
     const invoiceName = event.target.files?.[0]?.name || '';
-    setForm((current) => ({ ...current, invoiceName }));
+    setForm((current) => ({ ...current, invoiceName, invoiceFile }));
   };
 
   const handleSubmit = async (event) => {

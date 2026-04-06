@@ -43,6 +43,16 @@ const registeredProductSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    invoiceUrl: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    invoicePublicId: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     createdAt: {
       type: Date,
       default: Date.now,

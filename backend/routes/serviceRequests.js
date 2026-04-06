@@ -15,6 +15,8 @@ const sanitizeServiceRequest = (serviceRequest) => ({
   issueType: serviceRequest.issueType,
   description: serviceRequest.description,
   imageName: serviceRequest.imageName || '',
+  imageUrl: serviceRequest.imageUrl || '',
+  imagePublicId: serviceRequest.imagePublicId || '',
   status: serviceRequest.status,
   assignedTechnician: serviceRequest.assignedTechnician,
   createdAt:
@@ -59,6 +61,8 @@ router.post('/', async (request, response) => {
       issueType = '',
       description = '',
       imageName = '',
+      imageUrl = '',
+      imagePublicId = '',
       assignedTechnician = 'Support Desk',
     } = request.body ?? {};
 
@@ -101,6 +105,8 @@ router.post('/', async (request, response) => {
       issueType: issueType.trim(),
       description: description.trim(),
       imageName: imageName.trim(),
+      imageUrl: imageUrl.trim(),
+      imagePublicId: imagePublicId.trim(),
       status: 'Pending',
       assignedTechnician: assignedTechnician.trim() || 'Support Desk',
     });

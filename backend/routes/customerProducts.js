@@ -71,6 +71,8 @@ const sanitizeRegisteredProduct = (registeredProduct) => {
     purchaseDate: registeredProduct.purchaseDate,
     warrantyMonths: Number(registeredProduct.warrantyMonths || 0),
     invoiceName: registeredProduct.invoiceName || '',
+    invoiceUrl: registeredProduct.invoiceUrl || '',
+    invoicePublicId: registeredProduct.invoicePublicId || '',
     status: warrantySnapshot.status,
     warrantyExpiryDate: warrantySnapshot.warrantyExpiryDate,
     createdAt:
@@ -94,6 +96,8 @@ const buildProductMirrorPayload = (registeredProduct) => ({
   purchaseDate: registeredProduct.purchaseDate,
   warrantyMonths: Number(registeredProduct.warrantyMonths || 0),
   invoiceName: registeredProduct.invoiceName || '',
+  invoiceUrl: registeredProduct.invoiceUrl || '',
+  invoicePublicId: registeredProduct.invoicePublicId || '',
   createdAt: registeredProduct.createdAt,
   updatedAt: new Date(),
 });
@@ -148,6 +152,8 @@ router.post('/', async (request, response) => {
       purchaseDate = '',
       warrantyMonths = 0,
       invoiceName = '',
+      invoiceUrl = '',
+      invoicePublicId = '',
     } = request.body ?? {};
 
     const normalizedCustomerEmail = customerEmail.trim().toLowerCase();
@@ -195,6 +201,8 @@ router.post('/', async (request, response) => {
       purchaseDate: purchaseDate.trim(),
       warrantyMonths: normalizedWarrantyMonths,
       invoiceName: invoiceName.trim(),
+      invoiceUrl: invoiceUrl.trim(),
+      invoicePublicId: invoicePublicId.trim(),
     });
 
     await syncProductMirror(registeredProduct);

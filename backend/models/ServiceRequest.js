@@ -43,6 +43,16 @@ const serviceRequestSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    imageUrl: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    imagePublicId: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     status: {
       type: String,
       default: 'Pending',

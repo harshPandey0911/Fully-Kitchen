@@ -14,6 +14,8 @@ import EditProfile from '../customer/EditProfile';
 import {
   buildCustomerNotifications,
   getProductImage,
+  initialOwnedProducts,
+  initialServiceRequests,
   ownershipProductOptions,
 } from '../../data/customerOwnership';
 import { APP_DOMAIN, APP_NAME } from '../../constants/branding';
@@ -24,6 +26,7 @@ import ServiceRequestForm from '../../components/customer/service/ServiceRequest
 import { customerProductsApi } from '../../services/customerProductsApi';
 import { serviceRequestsApi } from '../../services/serviceRequestsApi';
 import { retailerProductsApi } from '../../services/retailerProductsApi';
+import { uploadsApi } from '../../services/uploadsApi';
 
 const navItems = [
   { id: 'home', label: 'Home', path: '/customer/home', icon: LuHouse },
@@ -41,8 +44,6 @@ const technicianDirectory = {
   Installation: 'Aisha Verma',
   Replacement: 'Ananya Shah',
 };
-const legacyDummyProductIds = new Set(['prd-1001', 'prd-1002', 'prd-1003', 'prd-1004']);
-const legacyDummyServiceIds = new Set(['SR-4101', 'SR-4102', 'SR-4095']);
 
 const readStorage = (key, fallback) => {
   try {
@@ -53,11 +54,10 @@ const readStorage = (key, fallback) => {
   }
 };
 
-const sanitizeStoredProducts = (items) =>
-  Array.isArray(items) ? items.filter((item) => !legacyDummyProductIds.has(String(item?.id || ''))) : [];
-
-const sanitizeStoredServiceRequests = (items) =>
-  Array.isArray(items) ? items.filter((item) => !legacyDummyServiceIds.has(String(item?.id || ''))) : [];
+const readArrayWithDefault = (key, fallback) => {
+  const value = readStorage(key, fallback);
+  return Array.isArray(value) && value.length > 0 ? value : fallback;
+};
 
 const createId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
@@ -87,10 +87,10 @@ const CustomerDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [products, setProducts] = useState(() => sanitizeStoredProducts(readStorage('customerOwnedProducts', [])));
+  const [products, setProducts] = useState(() => readArrayWithDefault('customerOwnedProducts', initialOwnedProducts));
   const [catalogProducts, setCatalogProducts] = useState([]);
   const [serviceRequests, setServiceRequests] = useState(() =>
-    sanitizeStoredServiceRequests(readStorage('customerServiceRequests', [])),
+    readArrayWithDefault('customerServiceRequests', initialServiceRequests),
   );
   const [readNotificationIds, setReadNotificationIds] = useState(() => readStorage('customerReadNotificationIds', []));
   const [profile, setProfile] = useState(() => readStorage('customerProfile', getDefaultCustomerProfile()));
@@ -388,6 +388,15 @@ const CustomerDashboard = () => {
     }
 
     try {
+      let invoiceUpload = null;
+
+      if (payload.invoiceFile) {
+        const uploadResponse = await uploadsApi.uploadFile(payload.invoiceFile, {
+          folder: 'customer-invoices',
+        });
+        invoiceUpload = uploadResponse.asset || null;
+      }
+
       const response = await customerProductsApi.register({
         customerEmail,
         customerName,
@@ -396,7 +405,9 @@ const CustomerDashboard = () => {
         modelNumber: payload.modelNumber.trim(),
         purchaseDate: payload.purchaseDate,
         warrantyMonths: Number(payload.warrantyMonths),
-        invoiceName: payload.invoiceName || '',
+        invoiceName: invoiceUpload?.originalName || payload.invoiceName || '',
+        invoiceUrl: invoiceUpload?.secureUrl || '',
+        invoicePublicId: invoiceUpload?.publicId || '',
       });
 
       setProducts((current) => [response.registeredProduct, ...current]);
@@ -426,6 +437,15 @@ const CustomerDashboard = () => {
     }
 
     try {
+      let imageUpload = null;
+
+      if (payload.imageFile) {
+        const uploadResponse = await uploadsApi.uploadFile(payload.imageFile, {
+          folder: 'service-requests',
+        });
+        imageUpload = uploadResponse.asset || null;
+      }
+
       const response = await serviceRequestsApi.create({
         customerEmail,
         customerName,
@@ -434,7 +454,9 @@ const CustomerDashboard = () => {
         productName: payload.productName,
         issueType: payload.issueType,
         description: payload.description.trim(),
-        imageName: payload.imageName || '',
+        imageName: imageUpload?.originalName || payload.imageName || '',
+        imageUrl: imageUpload?.secureUrl || '',
+        imagePublicId: imageUpload?.publicId || '',
         assignedTechnician: technicianDirectory[payload.issueType] || 'Support Desk',
       });
 

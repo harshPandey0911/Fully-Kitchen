@@ -47,6 +47,36 @@ const sections = [
   },
 ];
 
+const dashboardStats = [
+  { title: 'Total Sales', value: 'Rs 2.3L', meta: '+12.4% vs last month' },
+  { title: 'Orders', value: '456', meta: '38 active today' },
+  { title: 'Customers', value: '487', meta: '64 repeat buyers' },
+  { title: 'Avg Order Value', value: 'Rs 870', meta: 'Steady this week' },
+];
+
+const salesData = [
+  { name: 'Jan', sales: 1800 },
+  { name: 'Feb', sales: 2400 },
+  { name: 'Mar', sales: 2200 },
+  { name: 'Apr', sales: 2900 },
+  { name: 'May', sales: 3400 },
+  { name: 'Jun', sales: 3200 },
+];
+
+const orderData = [
+  { id: 'ORD-2101', product: 'Mixer Grinder', customer: 'Rajesh Kumar', price: 'Rs 2,499', status: 'Delivered' },
+  { id: 'ORD-2102', product: 'Electric Kettle', customer: 'Priya Singh', price: 'Rs 1,299', status: 'Pending' },
+  { id: 'ORD-2103', product: 'Microwave Oven', customer: 'Amit Patel', price: 'Rs 8,999', status: 'Processing' },
+  { id: 'ORD-2104', product: 'Air Fryer', customer: 'Anjali Desai', price: 'Rs 5,499', status: 'Delivered' },
+];
+
+const storeInfo = [
+  { label: 'Store Name', value: 'Premium Kitchen Store' },
+  { label: 'Location', value: 'Sector 7, Mumbai' },
+  { label: 'Contact', value: '+91 98765 43210' },
+  { label: 'Join Date', value: '15 Jan 2024' },
+];
+
 const chartAxis = { fill: '#6b7280', fontSize: 12 };
 const chartTooltip = {
   backgroundColor: '#fff',
@@ -113,7 +143,13 @@ const RetailerDashboard = () => {
   const matchesSearch = (values) =>
     !query || values.some((value) => String(value).toLowerCase().includes(query));
 
-  const filteredOrders = useMemo(() => [], [query]);
+  const filteredOrders = useMemo(
+    () =>
+      orderData.filter((item) =>
+        matchesSearch([item.product, item.customer, item.price, item.status])
+      ),
+    [query]
+  );
 
   const filteredInventory = useMemo(
     () =>
@@ -180,87 +216,6 @@ const RetailerDashboard = () => {
         matchesSearch([item.name, item.category, item.priceLabel, item.sku, item.status])
       ),
     [retailerCatalog, query]
-  );
-
-  const dashboardStats = useMemo(
-    () => [
-      { title: 'Customer Catalog', value: String(retailerCatalog.length), meta: 'Products published by retailer' },
-      { title: 'Registrations', value: String(products.length), meta: 'Products registered by customers' },
-      { title: 'Customers', value: String(customers.length), meta: 'Retail customer records' },
-      { title: 'Service Requests', value: String(serviceRequests.length), meta: 'Requests raised by customers' },
-    ],
-    [retailerCatalog.length, products.length, customers.length, serviceRequests.length]
-  );
-
-  const activityData = useMemo(() => {
-    const formatter = new Intl.DateTimeFormat('en-IN', { month: 'short' });
-    const months = [];
-    const monthIndex = new Map();
-    const today = new Date();
-
-    for (let offset = 5; offset >= 0; offset -= 1) {
-      const date = new Date(today.getFullYear(), today.getMonth() - offset, 1);
-      const key = `${date.getFullYear()}-${date.getMonth()}`;
-      monthIndex.set(key, months.length);
-      months.push({ name: formatter.format(date), count: 0 });
-    }
-
-    products.forEach((item) => {
-      const sourceDate = item.createdAt || item.purchaseDate;
-      if (!sourceDate) {
-        return;
-      }
-
-      const parsed = new Date(String(sourceDate).includes('T') ? sourceDate : `${sourceDate}T00:00:00`);
-      if (Number.isNaN(parsed.getTime())) {
-        return;
-      }
-
-      const key = `${parsed.getFullYear()}-${parsed.getMonth()}`;
-      const targetIndex = monthIndex.get(key);
-      if (targetIndex === undefined) {
-        return;
-      }
-
-      months[targetIndex].count += 1;
-    });
-
-    return months;
-  }, [products]);
-
-  const activityTotal = useMemo(
-    () => activityData.reduce((sum, item) => sum + item.count, 0),
-    [activityData]
-  );
-
-  const salesStats = useMemo(
-    () => [
-      { title: 'Published Products', value: String(retailerCatalog.length), meta: 'Currently visible to customers' },
-      { title: 'Registered Products', value: String(products.length), meta: 'Captured from customer activity' },
-      { title: 'Restock Requests', value: String(restockRequests.length), meta: 'Raised to distributors' },
-      { title: 'Recent Activity', value: String(activityTotal), meta: 'Entries across the last 6 months' },
-    ],
-    [retailerCatalog.length, products.length, restockRequests.length, activityTotal]
-  );
-
-  const orderStats = useMemo(
-    () => [
-      { title: 'Incoming Orders', value: '0', meta: 'No live order records yet' },
-      { title: 'Delivered', value: '0', meta: 'Will update from real orders only' },
-      { title: 'Returns', value: '0', meta: 'Only actual return records appear' },
-      { title: 'Pending Payments', value: '0', meta: 'Only backend-driven records appear' },
-    ],
-    []
-  );
-
-  const storeInfo = useMemo(
-    () => [
-      { label: 'Store Name', value: retailerName || 'Retailer' },
-      { label: 'Email', value: retailerEmail || `retailer@${APP_DOMAIN}` },
-      { label: 'Customer Catalog', value: String(retailerCatalog.length) },
-      { label: 'Registered Products', value: String(products.length) },
-    ],
-    [retailerName, retailerEmail, retailerCatalog.length, products.length]
   );
 
   const customerStats = useMemo(
@@ -787,12 +742,12 @@ const RetailerDashboard = () => {
       <div className="p-4">
         <div className="h-[250px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={activityData} barCategoryGap="28%" margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+            <BarChart data={salesData} barCategoryGap="28%" margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
               <CartesianGrid stroke="#f1f5f9" strokeDasharray="2 2" strokeWidth={0.5} vertical={false} />
               <XAxis dataKey="name" tick={chartAxis} axisLine={false} tickLine={false} />
               <YAxis tick={chartAxis} axisLine={false} tickLine={false} width={42} />
               <Tooltip contentStyle={chartTooltip} formatter={(value) => value.toLocaleString()} />
-              <Bar dataKey="count" fill="#6B7280" barSize={18} radius={[6, 6, 0, 0]} activeBar={{ fill: '#4B5563' }} />
+              <Bar dataKey="sales" fill="#6B7280" barSize={18} radius={[6, 6, 0, 0]} activeBar={{ fill: '#4B5563' }} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -804,7 +759,7 @@ const RetailerDashboard = () => {
     <div className="space-y-6">
       {renderCards(dashboardStats)}
       <div className="grid gap-6 xl:grid-cols-[1.65fr_1fr]">
-        {renderChart('Registration Trend')}
+        {renderChart('Sales Trend')}
         <div className={panelClass}>
           <div className="border-b border-gray-200 px-5 py-4">
             <h3 className="text-sm font-semibold text-gray-900">Store Info</h3>
@@ -1024,6 +979,17 @@ const RetailerDashboard = () => {
           'id',
           catalogLoading ? 'Loading customer catalog...' : 'No customer catalog products yet.'
         )}
+        {renderTable(
+          'Recent Orders',
+          [
+            { key: 'product', label: 'Product', bold: true },
+            { key: 'customer', label: 'Customer' },
+            { key: 'price', label: 'Price' },
+            { key: 'status', label: 'Status', badge: true },
+          ],
+          filteredOrders,
+          'id'
+        )}
         {inventoryError ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {inventoryError}
@@ -1092,7 +1058,12 @@ const RetailerDashboard = () => {
     ),
     orders: (
       <div className="space-y-6">
-        {renderCards(orderStats)}
+        {renderCards([
+          { title: 'Open Orders', value: '38', meta: 'Need fulfillment' },
+          { title: 'Delivered', value: '312', meta: 'Completed this quarter' },
+          { title: 'Returns', value: '06', meta: 'Within SLA' },
+          { title: 'Pending Payments', value: '09', meta: 'Awaiting confirmation' },
+        ])}
         {renderTable(
           'Order Activity',
           [
@@ -1102,8 +1073,7 @@ const RetailerDashboard = () => {
             { key: 'status', label: 'Status', badge: true },
           ],
           filteredOrders,
-          'id',
-          'No order records yet.'
+          'id'
         )}
       </div>
     ),
@@ -1155,8 +1125,13 @@ const RetailerDashboard = () => {
     ),
     sales: (
       <div className="space-y-6">
-        {renderCards(salesStats)}
-        {renderChart('Retail Activity')}
+        {renderCards([
+          { title: 'Monthly Sales', value: 'Rs 34,000', meta: 'Current cycle' },
+          { title: 'Top Product', value: 'Microwave', meta: 'Highest revenue item' },
+          { title: 'Conversion', value: '18.2%', meta: 'Store walk-ins to orders' },
+          { title: 'Returns Rate', value: '1.3%', meta: 'Healthy trend' },
+        ])}
+        {renderChart('Sales Performance')}
       </div>
     ),
     settings: (

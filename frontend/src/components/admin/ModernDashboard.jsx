@@ -16,16 +16,45 @@ import {
 import { adminUi, statusBadge } from './adminStyles';
 
 const ModernDashboard = () => {
-  const revenueData = [];
-  const categoryData = [];
-  const salesData = [];
-  const statsCards = [
-    { title: 'Total Revenue', value: 'Rs 0', change: 'Live data only' },
-    { title: 'Total Orders', value: '0', change: 'Live data only' },
-    { title: 'Customers', value: '0', change: 'Live data only' },
-    { title: 'Avg Revenue', value: 'Rs 0', change: 'Live data only' },
+  const revenueData = [
+    { month: 'Jan', revenue: 4000, target: 5000 },
+    { month: 'Feb', revenue: 6000, target: 5500 },
+    { month: 'Mar', revenue: 5500, target: 6000 },
+    { month: 'Apr', revenue: 7200, target: 6500 },
+    { month: 'May', revenue: 8900, target: 7500 },
+    { month: 'Jun', revenue: 9200, target: 8500 },
   ];
-  const recentOrders = [];
+
+  const categoryData = [
+    { name: 'Mixers', value: 2400, fill: '#1d4ed8' },
+    { name: 'Kettles', value: 1398, fill: '#3b82f6' },
+    { name: 'Ovens', value: 9800, fill: '#60a5fa' },
+    { name: 'Fryers', value: 3908, fill: '#94a3b8' },
+    { name: 'Coffee', value: 4800, fill: '#64748b' },
+  ];
+
+  const salesData = [
+    { name: 'Mixer Grinder', sales: 4000 },
+    { name: 'Electric Kettle', sales: 3000 },
+    { name: 'Microwave', sales: 5500 },
+    { name: 'Air Fryer', sales: 4500 },
+    { name: 'Toaster', sales: 3200 },
+    { name: 'Refrigerator', sales: 6000 },
+    { name: 'Induction', sales: 2800 },
+  ];
+  const statsCards = [
+    { title: 'Total Revenue', value: 'Rs 45,231', change: '+12.5%' },
+    { title: 'Total Orders', value: '451', change: '+5.2%' },
+    { title: 'Customers', value: '2,543', change: '+8.1%' },
+    { title: 'Avg Revenue', value: 'Rs 1,240', change: '+3.8%' },
+  ];
+  const recentOrders = [
+    { id: 1, product: 'Mixer Grinder', customer: 'Rajesh Kumar', price: 'Rs 2,499', status: 'Delivered' },
+    { id: 2, product: 'Electric Kettle', customer: 'Priya Singh', price: 'Rs 1,299', status: 'Pending' },
+    { id: 3, product: 'Microwave Oven', customer: 'Amit Patel', price: 'Rs 8,999', status: 'Delivered' },
+    { id: 4, product: 'Air Fryer', customer: 'Anjali Desai', price: 'Rs 5,499', status: 'Delivered' },
+    { id: 5, product: 'Coffee Maker', customer: 'Vikram Singh', price: 'Rs 3,199', status: 'Pending' },
+  ];
 
   const chartAxis = { stroke: '#9ca3af', fontSize: 12 };
   const productChartAxis = { fill: '#6b7280', fontSize: 12 };

@@ -20,6 +20,7 @@ import retailerAuthRoutes from './routes/retailerAuth.js';
 import retailersRoutes from './routes/retailers.js';
 import subAdminAuthRoutes from './routes/subAdminAuth.js';
 import subAdminsRoutes from './routes/subadmins.js';
+import uploadsRoutes from './routes/uploads.js';
 import { syncAdminAccount } from './utils/seedAdmin.js';
 import { syncInventoryProductsCatalog } from './utils/seedInventoryProducts.js';
 
@@ -95,6 +96,7 @@ app.use('/api/retailer', retailerAuthRoutes);
 app.use('/api/retailers', retailersRoutes);
 app.use('/api/subadmin', subAdminAuthRoutes);
 app.use('/api/subadmins', subAdminsRoutes);
+app.use('/api/uploads', uploadsRoutes);
 
 if (fs.existsSync(frontendDistPath)) {
   app.use(express.static(frontendDistPath));

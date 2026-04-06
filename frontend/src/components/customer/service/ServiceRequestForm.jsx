@@ -12,6 +12,7 @@ const createInitialForm = (products) => ({
   issueType: serviceIssueTypes[0],
   description: '',
   imageName: '',
+  imageFile: null,
 });
 
 export default function ServiceRequestForm({ products, onSubmit, onCancel }) {
@@ -29,8 +30,9 @@ export default function ServiceRequestForm({ products, onSubmit, onCancel }) {
   };
 
   const handleFileChange = (event) => {
+    const imageFile = event.target.files?.[0] || null;
     const imageName = event.target.files?.[0]?.name || '';
-    setForm((current) => ({ ...current, imageName }));
+    setForm((current) => ({ ...current, imageName, imageFile }));
   };
 
   const handleSubmit = async (event) => {
@@ -48,6 +50,7 @@ export default function ServiceRequestForm({ products, onSubmit, onCancel }) {
       issueType: form.issueType,
       description: form.description,
       imageName: form.imageName,
+      imageFile: form.imageFile,
     });
 
     if (didSubmit !== false) {
