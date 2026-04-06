@@ -1,0 +1,12 @@
+{
+  "name": "fully-kitchen",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "build": "npm --prefix frontend run build"
+  }
+}
