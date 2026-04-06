@@ -44,6 +44,8 @@ const isAllowedLanOrigin = (origin) =>
   );
 
 const app = express();
+let initializationPromise;
+let startupSummaryLogged = false;
 
 app.use(
   cors({
@@ -74,12 +76,55 @@ app.get('/', (_request, response) => {
   });
 });
 
-app.get('/api/health', (_request, response) => {
-  response.status(200).json({
-    success: true,
-    message: 'Backend is healthy.',
-    databaseState: mongoose.connection.readyState,
-  });
+const initializeApp = async () => {
+  await connectDatabase();
+  const admin = await syncAdminAccount();
+  await syncInventoryProductsCatalog();
+
+  if (!startupSummaryLogged) {
+    console.log(`Admin account synced to database: ${admin.email}`);
+    startupSummaryLogged = true;
+  }
+};
+
+const ensureInitialized = async () => {
+  if (!initializationPromise) {
+    initializationPromise = initializeApp().catch((error) => {
+      initializationPromise = null;
+      throw error;
+    });
+  }
+
+  await initializationPromise;
+};
+
+app.get('/api/health', async (_request, response) => {
+  try {
+    await ensureInitialized();
+    response.status(200).json({
+      success: true,
+      message: 'Backend is healthy.',
+      databaseState: mongoose.connection.readyState,
+    });
+  } catch (error) {
+    response.status(503).json({
+      success: false,
+      message: error.message || 'Backend initialization failed.',
+      databaseState: mongoose.connection.readyState,
+    });
+  }
+});
+
+app.use('/api', async (_request, response, next) => {
+  try {
+    await ensureInitialized();
+    next();
+  } catch (error) {
+    response.status(503).json({
+      success: false,
+      message: error.message || 'Backend initialization failed.',
+    });
+  }
 });
 
 app.use('/api/admin', adminAuthRoutes);
@@ -106,22 +151,18 @@ if (fs.existsSync(frontendDistPath)) {
   });
 }
 
-const startServer = async () => {
-  try {
-    await connectDatabase();
-    const admin = await syncAdminAccount();
-    await syncInventoryProductsCatalog();
-
-    console.log(`Admin account synced to database: ${admin.email}`);
-
-    app.listen(port, host, () => {
-      console.log(`Server running on http://localhost:${port}`);
-      console.log(`Server listening on http://${host}:${port}`);
+if (!process.env.VERCEL) {
+  ensureInitialized()
+    .then(() => {
+      app.listen(port, host, () => {
+        console.log(`Server running on http://localhost:${port}`);
+        console.log(`Server listening on http://${host}:${port}`);
+      });
+    })
+    .catch((error) => {
+      console.error('Failed to start server:', error.message);
+      process.exit(1);
     });
-  } catch (error) {
-    console.error('Failed to start server:', error.message);
-    process.exit(1);
-  }
-};
+}
 
-startServer();
+export default app;
