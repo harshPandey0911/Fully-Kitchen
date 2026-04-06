@@ -196,6 +196,7 @@ const RetailerDashboard = () => {
           item.issueType,
           item.customerName,
           item.customerEmail,
+          item.imageName,
           item.status,
         ])
       ),
@@ -663,6 +664,30 @@ const RetailerDashboard = () => {
     });
   };
 
+  const renderAttachmentCell = (row) => {
+    if (!row.imageName && !row.imageUrl && !row.imagePublicId) {
+      return <span className="text-gray-400">Not attached</span>;
+    }
+
+    return (
+      <div className="space-y-1">
+        <p className="font-medium text-gray-900">{row.imageName || 'Attached file'}</p>
+        {row.imageUrl ? (
+          <a
+            href={row.imageUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-medium text-blue-600 hover:text-blue-700"
+          >
+            Open attachment
+          </a>
+        ) : (
+          <span className="text-xs text-gray-400">Attached with request</span>
+        )}
+      </div>
+    );
+  };
+
   const latestRestockMap = useMemo(() => {
     const map = new Map();
     restockRequests.forEach((item) => {
@@ -1114,6 +1139,7 @@ const RetailerDashboard = () => {
             { key: 'customerName', label: 'Customer' },
             { key: 'customerEmail', label: 'Email' },
             { key: 'description', label: 'Requirement', render: (row) => row.description || 'Not provided' },
+            { key: 'imageName', label: 'Attachment', render: (row) => renderAttachmentCell(row) },
             { key: 'createdAt', label: 'Requested', render: (row) => formatRequestDate(row.createdAt) },
             { key: 'status', label: 'Status', badge: true },
           ],

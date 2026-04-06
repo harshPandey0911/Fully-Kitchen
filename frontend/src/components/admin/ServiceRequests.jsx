@@ -51,6 +51,7 @@ const ServiceRequests = () => {
         ticket.productName,
         ticket.issueType,
         ticket.description,
+        ticket.imageName,
       ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(query));
@@ -79,6 +80,30 @@ const ServiceRequests = () => {
       month: 'short',
       year: 'numeric',
     });
+  };
+
+  const renderAttachmentCell = (ticket) => {
+    if (!ticket.imageName && !ticket.imageUrl && !ticket.imagePublicId) {
+      return <span className="text-gray-400">Not attached</span>;
+    }
+
+    return (
+      <div className="space-y-1">
+        <p className="font-medium text-gray-900">{ticket.imageName || 'Attached file'}</p>
+        {ticket.imageUrl ? (
+          <a
+            href={ticket.imageUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-medium text-blue-600 hover:text-blue-700"
+          >
+            Open attachment
+          </a>
+        ) : (
+          <span className="text-xs text-gray-400">Attached with request</span>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -140,6 +165,7 @@ const ServiceRequests = () => {
                   <th className={adminUi.th}>Product</th>
                   <th className={adminUi.th}>Issue</th>
                   <th className={adminUi.th}>Requirement</th>
+                  <th className={adminUi.th}>Attachment</th>
                   <th className={adminUi.th}>Requested On</th>
                   <th className={adminUi.th}>Status</th>
                 </tr>
@@ -153,6 +179,7 @@ const ServiceRequests = () => {
                       <td className={adminUi.td}>{ticket.productName}</td>
                       <td className={adminUi.td}>{ticket.issueType}</td>
                       <td className={adminUi.td}>{ticket.description || 'Not provided'}</td>
+                      <td className={adminUi.td}>{renderAttachmentCell(ticket)}</td>
                       <td className={adminUi.td}>{formatDate(ticket.createdAt)}</td>
                       <td className={adminUi.td}>
                         <span className={statusBadge(ticket.status)}>{ticket.status}</span>
@@ -161,7 +188,7 @@ const ServiceRequests = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-sm text-gray-400">
+                    <td colSpan="8" className="px-6 py-12 text-center text-sm text-gray-400">
                       No service requests found
                     </td>
                   </tr>
