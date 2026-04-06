@@ -3,6 +3,8 @@ import { APP_STORAGE_PREFIX } from '../constants/branding';
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 const LOCAL_CUSTOMER_ACCOUNTS_KEY = `${APP_STORAGE_PREFIX}CustomerAccounts`;
 
+const normalizeEmail = (value = '') => String(value || '').trim().toLowerCase();
+
 const parseJsonSafely = async (response) => {
   try {
     return await response.json();
@@ -34,6 +36,15 @@ const saveLocalAccounts = (accounts) => {
   localStorage.setItem(LOCAL_CUSTOMER_ACCOUNTS_KEY, JSON.stringify(accounts));
 };
 
+const readStorageObject = (key) => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 const getTierFromLoginCount = (loginCount) => {
   if (loginCount >= 5) {
     return 'Premium';
@@ -58,8 +69,93 @@ const sanitizeLocalUser = (account) => ({
   lastLoginAt: account.lastLoginAt || null,
 });
 
+const upsertLocalAccount = ({
+  id = '',
+  name = '',
+  email = '',
+  password = '',
+  orderCount = 0,
+  loginCount = 0,
+  tier = '',
+  createdAt = '',
+  lastLoginAt = null,
+}) => {
+  const normalizedEmail = normalizeEmail(email);
+
+  if (!normalizedEmail) {
+    return null;
+  }
+
+  const accounts = readLocalAccounts();
+  const accountIndex = accounts.findIndex((account) => account.email === normalizedEmail);
+  const existingAccount = accountIndex >= 0 ? accounts[accountIndex] : null;
+  const nextLoginCount = Number.isFinite(Number(loginCount))
+    ? Number(loginCount)
+    : Number(existingAccount?.loginCount || 0);
+  const nextAccount = {
+    id: id || existingAccount?.id || `cust-local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: String(name || existingAccount?.name || normalizedEmail.split('@')[0] || 'Customer').trim(),
+    email: normalizedEmail,
+    password: String(password || existingAccount?.password || ''),
+    orderCount: Number.isFinite(Number(orderCount)) ? Number(orderCount) : Number(existingAccount?.orderCount || 0),
+    loginCount: nextLoginCount,
+    tier: tier || existingAccount?.tier || getTierFromLoginCount(nextLoginCount),
+    createdAt: createdAt || existingAccount?.createdAt || new Date().toISOString(),
+    lastLoginAt: lastLoginAt || existingAccount?.lastLoginAt || null,
+  };
+
+  if (accountIndex >= 0) {
+    accounts[accountIndex] = nextAccount;
+  } else {
+    accounts.unshift(nextAccount);
+  }
+
+  saveLocalAccounts(accounts);
+  return nextAccount;
+};
+
+const readRememberedCustomer = (email = '') => {
+  const normalizedEmail = normalizeEmail(email);
+  const customerData = readStorageObject('customerData');
+  const customerProfile = readStorageObject('customerProfile');
+  const loginData = readStorageObject('loginData');
+  const rememberedEmails = [
+    normalizeEmail(customerData?.email),
+    normalizeEmail(customerProfile?.email),
+    normalizeEmail(loginData?.email),
+  ].filter(Boolean);
+
+  if (!normalizedEmail || !rememberedEmails.includes(normalizedEmail)) {
+    return null;
+  }
+
+  return {
+    id: customerData?.id || '',
+    name: customerData?.name || customerProfile?.fullName || loginData?.userName || 'Customer',
+    email: normalizedEmail,
+    orderCount: Number(customerData?.orderCount || 0),
+    loginCount: Number(customerData?.loginCount || 0),
+    tier: customerData?.tier || 'New',
+    createdAt: customerData?.createdAt || new Date().toISOString(),
+    lastLoginAt: customerData?.lastLoginAt || null,
+  };
+};
+
+const syncRemoteUserToLocal = (payload, user) =>
+  upsertLocalAccount({
+    id: user?.id,
+    name: user?.name,
+    email: user?.email,
+    password: payload?.password || '',
+    orderCount: user?.orderCount,
+    loginCount: user?.loginCount,
+    tier: user?.tier,
+    createdAt: user?.createdAt,
+    lastLoginAt: user?.lastLoginAt,
+  });
+
 const registerWithLocalFallback = async ({ name = '', email = '', password = '' }) => {
-  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const normalizedEmail = normalizeEmail(email);
   const accounts = readLocalAccounts();
   const existingAccount = accounts.find((account) => account.email === normalizedEmail);
 
@@ -67,21 +163,14 @@ const registerWithLocalFallback = async ({ name = '', email = '', password = '' 
     throw buildError({ message: 'An account with this email already exists.' }, 'Unable to create account.');
   }
 
-  const createdAt = new Date().toISOString();
-  const nextAccount = {
-    id: `cust-local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    name: String(name || '').trim(),
+  const nextAccount = upsertLocalAccount({
+    name,
     email: normalizedEmail,
     password,
     orderCount: 0,
     loginCount: 0,
     tier: 'New',
-    createdAt,
-    lastLoginAt: null,
-  };
-
-  accounts.unshift(nextAccount);
-  saveLocalAccounts(accounts);
+  });
 
   return {
     success: true,
@@ -92,35 +181,59 @@ const registerWithLocalFallback = async ({ name = '', email = '', password = '' 
 };
 
 const loginWithLocalFallback = async ({ email = '', password = '' }) => {
-  const normalizedEmail = String(email || '').trim().toLowerCase();
-  const accounts = readLocalAccounts();
-  const accountIndex = accounts.findIndex((account) => account.email === normalizedEmail);
+  const normalizedEmail = normalizeEmail(email);
+  let accounts = readLocalAccounts();
+  let accountIndex = accounts.findIndex((account) => account.email === normalizedEmail);
+  let account = accountIndex >= 0 ? accounts[accountIndex] : null;
 
-  if (accountIndex === -1) {
-    const error = buildError(
+  if (!account) {
+    const rememberedCustomer = readRememberedCustomer(normalizedEmail);
+
+    if (rememberedCustomer) {
+      account = upsertLocalAccount({
+        ...rememberedCustomer,
+        email: normalizedEmail,
+        password,
+      });
+      accounts = readLocalAccounts();
+      accountIndex = accounts.findIndex((entry) => entry.email === normalizedEmail);
+    }
+  }
+
+  if (!account) {
+    throw buildError(
       {
         code: 'ACCOUNT_NOT_FOUND',
         message: 'No account found with this email. Please sign up first.',
       },
       'Unable to log in.',
     );
-    throw error;
   }
-
-  const account = accounts[accountIndex];
 
   if (String(account.password || '') !== String(password || '')) {
-    const error = buildError(
-      {
-        code: 'INVALID_PASSWORD',
-        message: 'Invalid email or password.',
-      },
-      'Unable to log in.',
-    );
-    throw error;
+    const rememberedCustomer = readRememberedCustomer(normalizedEmail);
+
+    if (rememberedCustomer) {
+      account = upsertLocalAccount({
+        ...account,
+        ...rememberedCustomer,
+        email: normalizedEmail,
+        password,
+      });
+      accounts = readLocalAccounts();
+      accountIndex = accounts.findIndex((entry) => entry.email === normalizedEmail);
+    } else {
+      throw buildError(
+        {
+          code: 'INVALID_PASSWORD',
+          message: 'Invalid email or password.',
+        },
+        'Unable to log in.',
+      );
+    }
   }
 
-  const loginCount = Number(account.loginCount || 0) + 1;
+  const loginCount = Number(account?.loginCount || 0) + 1;
   const lastLoginAt = new Date().toISOString();
   const updatedAccount = {
     ...account,
@@ -165,6 +278,7 @@ const requestCustomerAuth = async (path, payload, fallbackHandler, fallbackMessa
     const data = await parseJsonSafely(response);
 
     if (response.ok && data?.user) {
+      syncRemoteUserToLocal(payload, data.user);
       return data;
     }
 
